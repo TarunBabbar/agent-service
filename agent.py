@@ -35,14 +35,31 @@ def health_check():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    if not request.is_json:
+        return jsonify({"error": "Invalid or missing JSON in request"}), 400
+    
     data = request.json
+
+    # Validate history
+    history = data.get("history")
+    if not history or not isinstance(history, list):
+        return jsonify({"error": "Missing or invalid 'history' field. It should be a list of messages."}), 400
+
+     # Validate message format
+    for msg in history:
+        if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
+            return jsonify({"error": "Each history item must be a dict with 'role' and 'content' keys."}), 400
+
+     # Optional flag
     code_only = data.get("code_only", True)
+
+    # Generate LangChain messages
     messages = convert_gradio_history(data["history"], code_only=code_only)
     full_response = ""
     for chunk in generate_response(messages):
         full_response += chunk
 
-    # Remove Markdown-style code blocks like ```python ... ```
+    # Clean up markdown
     if code_only:
         match = re.search(r"```(?:\w+)?\n(.*?)```", full_response, re.DOTALL)
         if match:
