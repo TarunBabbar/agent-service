@@ -33,6 +33,27 @@ def generate_response(messages):
 def health_check():
     return jsonify({"status": "ok", "message": "TarunBot is running 🚀"})
 
+@app.route("/test-llm", methods=["GET"])
+def test_llm():
+    try:
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        messages = [
+            SystemMessage(content="You are a helpful assistant."),
+            HumanMessage(content="Say Hello"),
+        ]
+
+        response = ""
+        for chunk in llm.stream(messages):
+            response += chunk
+
+        return jsonify({"llm_response": response})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "LLM call failed", "details": str(e)}), 500
+
 @app.route("/chat", methods=["POST"])
 def chat():
     if not request.is_json:
@@ -87,4 +108,4 @@ def chat_loop():
 
 # Entry point
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(port=5000, debug=True)
