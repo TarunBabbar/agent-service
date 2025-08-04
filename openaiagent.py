@@ -18,10 +18,14 @@ def convert_gradio_history(gradio_history, code_only=True):
         if code_only else
         "You are an expert software engineer. Generate clean, well-documented code based on user requirements."
     )
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = []
     for msg in gradio_history:
-        messages.append({"role": msg["role"], "content": msg["content"]})
+        if isinstance(msg, list) and len(msg) == 2:
+            messages.append({"role": msg[0], "content": msg[1]})
+        elif isinstance(msg, dict):
+            messages.append(msg)
     return messages
+
 
 # 🚀 Stream response from OpenAI
 def generate_response(messages):
