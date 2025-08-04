@@ -2,3 +2,6 @@ fastapi
 uvicorn
 langchain
 ollama
+langchain_ollama
+langchain-core
+flask
