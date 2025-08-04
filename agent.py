@@ -29,6 +29,10 @@ def generate_response(messages):
     for chunk in llm.stream(messages):
         yield chunk
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return jsonify({"status": "ok", "message": "TarunBot is running 🚀"})
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
