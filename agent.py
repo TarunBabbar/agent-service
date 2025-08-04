@@ -4,10 +4,15 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 from flask import Flask, request, jsonify
 import re
+
 app = Flask(__name__)
 
-# Load LLM
-llm = OllamaLLM(model="mistral", temperature=0.5)
+# ✅ Load LLM via Ngrok URL
+llm = OllamaLLM(
+    model="mistral",
+    base_url="https://cca26c890e6c.ngrok-free.app",  # 🔥 Set your ngrok HTTPS URL here
+    temperature=0.5
+)
 
 # Convert history to LangChain messages
 def convert_gradio_history(gradio_history, code_only=True):
@@ -36,17 +41,13 @@ def health_check():
 @app.route("/test-llm", methods=["GET"])
 def test_llm():
     try:
-        from langchain_core.messages import HumanMessage, SystemMessage
-
         messages = [
             SystemMessage(content="You are a helpful assistant."),
             HumanMessage(content="Say Hello"),
         ]
-
         response = ""
         for chunk in llm.stream(messages):
             response += chunk
-
         return jsonify({"llm_response": response})
 
     except Exception as e:
@@ -61,26 +62,22 @@ def chat():
     
     data = request.json
 
-    # Validate history
     history = data.get("history")
     if not history or not isinstance(history, list):
         return jsonify({"error": "Missing or invalid 'history' field. It should be a list of messages."}), 400
 
-     # Validate message format
     for msg in history:
         if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
             return jsonify({"error": "Each history item must be a dict with 'role' and 'content' keys."}), 400
 
-     # Optional flag
     code_only = data.get("code_only", True)
 
-    # Generate LangChain messages
     messages = convert_gradio_history(data["history"], code_only=code_only)
     full_response = ""
     for chunk in generate_response(messages):
         full_response += chunk
 
-    # Clean up markdown
+    # Extract code block only if `code_only` is enabled
     if code_only:
         match = re.search(r"```(?:\w+)?\n(.*?)```", full_response, re.DOTALL)
         if match:
@@ -88,7 +85,7 @@ def chat():
 
     return jsonify({"content": full_response})
 
-# CLI loop
+# CLI test loop (for local console testing)
 def chat_loop():
     history = []
     print("🧠 CodeGen Agent Ready. Type your prompt:")
